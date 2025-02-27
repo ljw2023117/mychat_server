@@ -37,5 +37,6 @@ void ChatServer::onMessage(const TcpConnectionPtr& conn, Buffer* buffer, Timesta
     json js = json::parse(buf);
     // 通过js["msgid"] 获取业务handler
     auto msgHandler = ChatService::getInstance()->getHandler(js["msgid"].get<int>());
+    cout << __FUNCTION__ << js["msgid"].get<int>() << endl;
     msgHandler(conn, js, time);
 }

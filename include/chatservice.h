@@ -31,6 +31,10 @@ enum EnMsgType
     CREATE_GROUP_MSG, // 创建群组 8
     ADD_GROUP_MSG, // 加入群组 9
     GROUP_CHAT_MSG, // 群聊天 10
+
+    LOGINOK_MSG,  // 登录成功后发送的消息 11
+    LOGINOK_MSG_ACK,   // 登录成功消息的响应 12
+    NEW_USER_LOGIN_MSG,// 有新用户登录的消息 13
 };
 
 class ChatService
@@ -54,6 +58,8 @@ public:
     void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
     // 客户端异常退出
     void clientCloseException(const TcpConnectionPtr& conn);
+    // 处理注销业务
+    void loginout(const TcpConnectionPtr &conn, json &js, Timestamp time);
     // 获取消息对应的处理器
     MsgHandler getHandler(int msgid);
 private:
