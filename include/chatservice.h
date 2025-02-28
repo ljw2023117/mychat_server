@@ -33,8 +33,8 @@ enum EnMsgType
     GROUP_CHAT_MSG, // 群聊天 10
 
     LOGINOK_MSG,  // 登录成功后发送的消息 11
-    LOGINOK_MSG_ACK,   // 登录成功消息的响应 12
-    NEW_USER_LOGIN_MSG,// 有新用户登录的消息 13
+    NEW_USER_LOGIN_MSG,// 有新用户登录的消息 12
+    USER_LOGINOUT_MSG,  // 通知其它用户有用户下线 13
 };
 
 class ChatService
@@ -46,6 +46,8 @@ public:
     void reg(const TcpConnectionPtr& conn, json& js, Timestamp time);
     // 处理登录业务
     void login(const TcpConnectionPtr& conn, json& js, Timestamp time);
+    // 登录成功返回消息
+    void loginok(const TcpConnectionPtr &conn, json &js, Timestamp time);
     // 一对一聊天业务
     void oneChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
     // 添加好友业务

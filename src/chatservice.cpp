@@ -72,32 +72,10 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
                 lock_guard<mutex> lock(_connMutex);
                 _userConnMap.insert({id, conn});
             }
-            // 登录后给所有当前在线的用户发消息
-            json response;
-            response["msgid"] = NEW_USER_LOGIN_MSG;
-            response["id"] = user.getId();
-            response["username"] = user.getName();
-            for (auto& t: _userConnMap)
-            {
-                t.second->send(response.dump());
-            }
-            
-            // 登录后给新登录的用户发送当前在线用户的信息
-            for (auto& t: _userConnMap)
-            {
-                User user = _userModel.query(t.first);
-                json response;
-                response["msgid"] = LOGINOK_MSG_ACK;
-                response["id"] = user.getId();
-                response["username"] = user.getName();
-                conn->send(response.dump());
-            }
-            
+           
             // 登录成功，更新用户状态信息  state offline=>online
             user.setState("online");
             _userModel.updateState(user);
-
-
 
         }
     }
@@ -110,6 +88,40 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
         response["errmsg"] = "id or password is invalid!";
         conn->send(response.dump());
     }
+}
+
+void ChatService::loginok(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    cout << __FUNCTION__ << endl;
+    int id = js["id"].get<int>();
+
+    User user = _userModel.query(id);
+    for (auto &t : _userConnMap) {
+        cout << t.first << "  " << t.second << endl;
+    }
+
+    // 新用户msg
+    json newusermsg;
+    newusermsg["msgid"] = NEW_USER_LOGIN_MSG;
+    newusermsg["id"] = user.getId();
+    newusermsg["name"] = user.getName();
+
+    for (auto &t : _userConnMap) {
+        if (t.first != id) {
+            // 老用户msg
+            User user = _userModel.query(t.first);
+            json oldusermsg;
+            oldusermsg["msgid"] = NEW_USER_LOGIN_MSG;
+            oldusermsg["id"] = user.getId();
+            oldusermsg["name"] = user.getName();
+            cout << "newuser: " << newusermsg << endl;
+            cout << "olduser: " << oldusermsg << endl;
+            // 登录后给新登录的用户发送当前在线用户的信息
+            conn->send(oldusermsg.dump());
+            // 登录后给所有当前在线的用户发新用户消息
+            t.second->send(newusermsg.dump());
+        }
+    }
+    cout << __FUNCTION__ << "   end" << endl;
 }
 
 void ChatService::oneChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
@@ -138,6 +150,15 @@ void ChatService::oneChat(const TcpConnectionPtr &conn, json &js, Timestamp time
 
 }
 
+void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    {
+        lock_guard<mutex> lock(_connMutex);
+        for (auto& t : _userConnMap)
+            if (t.second != conn)
+                t.second->send(js.dump());
+    }
+}
+
 // 客户端异常退出
 void ChatService::clientCloseException(const TcpConnectionPtr &conn) {
 {
@@ -155,6 +176,7 @@ void ChatService::clientCloseException(const TcpConnectionPtr &conn) {
 }
 
 void ChatService::loginout(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    cout << __FUNCTION__ << endl;
     int userid = js["id"].get<int>();
     {
         lock_guard<mutex> lock(_connMutex);
@@ -168,6 +190,16 @@ void ChatService::loginout(const TcpConnectionPtr &conn, json &js, Timestamp tim
     // 更新用户的状态信息
     User user(userid, "", "", "offline");
     _userModel.updateState(user);
+
+    json response;
+    response["msgid"] = USER_LOGINOUT_MSG;
+    response["id"] = userid;
+    // 通知其它用户有用户下线
+    for(auto& t : _userConnMap)
+    {
+        t.second->send(response.dump());
+    }
+    cout << __FUNCTION__ << "   end" << endl;
 }
 
 // 获取消息对应的处理器
@@ -193,11 +225,11 @@ ChatService::ChatService() {
     _msgHandlerMap.insert({LOGINOUT_MSG, std::bind(&ChatService::loginout, this, _1, _2, _3)});
     _msgHandlerMap.insert({REG_MSG, std::bind(&ChatService::reg, this, _1, _2, _3)});
     _msgHandlerMap.insert({ONE_CHAT_MSG, std::bind(&ChatService::oneChat, this, _1, _2, _3)});
+    _msgHandlerMap.insert({LOGINOK_MSG, std::bind(&ChatService::loginok, this, _1, _2, _3)});
     // _msgHandlerMap.insert({ADD_FRIEND_MSG, std::bind(&ChatService::addFriend, this, _1, _2, _3)});
 
     // // 群组业务管理相关事件处理回调函数
     // _msgHandlerMap.insert({CREATE_GROUP_MSG, std::bind(&ChatService::createGroup, this, _1, _2, _3)});
     // _msgHandlerMap.insert({ADD_GROUP_MSG, std::bind(&ChatService::addGroup, this, _1, _2, _3)});
-    // _msgHandlerMap.insert({GROUP_CHAT_MSG, std::bind(&ChatService::groupChat, this, _1, _2, _3)});
-
+    _msgHandlerMap.insert({GROUP_CHAT_MSG, std::bind(&ChatService::groupChat, this, _1, _2, _3)});
 }
