@@ -1,5 +1,3 @@
-aux_source_directory(. SRC_LIST)
-aux_source_directory(./model MODEL_LIST)
-
-add_executable(ChatServer ${SRC_LIST} ${MODEL_LIST})
-target_link_libraries(ChatServer muduo_net muduo_base mysqlclient)
+#加载子目录
+add_subdirectory(chat)
+add_subdirectory(file)

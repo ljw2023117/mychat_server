@@ -8,6 +8,8 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty)
 include_directories(${PROJECT_SOURCE_DIR}/include/model)
+include_directories(${PROJECT_SOURCE_DIR}/include/chat)
+include_directories(${PROJECT_SOURCE_DIR}/include/file)
 
 #加载子目录
 add_subdirectory(src)
