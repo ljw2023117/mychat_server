@@ -159,6 +159,32 @@ void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp ti
     }
 }
 
+void ChatService::newfile(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    int toid = js["toid"].get<int>();
+    if (toid)
+    {
+        lock_guard<mutex> lock(_connMutex);
+        auto it = _userConnMap.find(toid);
+        if (it != _userConnMap.end())
+        {
+            // toid在线，转发消息 服务器主动推送消息给toid用户
+            it->second->send(js.dump());
+            return;
+        }
+    }
+    else
+    {
+        lock_guard<mutex> lock(_connMutex);
+        for (auto& t : _userConnMap)
+        {
+            if (t.second != conn)
+            {
+                t.second->send(js.dump());
+            }
+        }
+    }
+}
+
 // 客户端异常退出
 void ChatService::clientCloseException(const TcpConnectionPtr &conn) {
 {
@@ -232,4 +258,5 @@ ChatService::ChatService() {
     // _msgHandlerMap.insert({CREATE_GROUP_MSG, std::bind(&ChatService::createGroup, this, _1, _2, _3)});
     // _msgHandlerMap.insert({ADD_GROUP_MSG, std::bind(&ChatService::addGroup, this, _1, _2, _3)});
     _msgHandlerMap.insert({GROUP_CHAT_MSG, std::bind(&ChatService::groupChat, this, _1, _2, _3)});
+    _msgHandlerMap.insert({FILE_MSG, std::bind(&ChatService::newfile, this, _1, _2, _3)});
 }

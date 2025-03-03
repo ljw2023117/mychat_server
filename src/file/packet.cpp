@@ -1,4 +1,5 @@
 #include "packet.h"
+#include <string.h>
 
 CPacket::CPacket(string id, uint64_t sum_size, bool f, uint16_t index, uint16_t sum, uint64_t size, char *_data)
     : sHead(0xFEFF), file_id(id), file_size(sum_size), flag(f),chunk_index(index), chunk_sum(sum), data_size(size), data(_data)
@@ -18,13 +19,17 @@ CPacket::CPacket(const char *pData) {
 
 string CPacket::Data() {
     string msg;
-    msg += to_string(sHead);
-    msg += file_id;
-    msg += to_string(file_size);
-    msg += to_string(chunk_index);
-    msg += to_string(chunk_sum);
-    msg += to_string(data_size);
-    msg.append(data, data_size);
+    msg.reserve(55 + data_size);
+    msg.resize(55 + data_size);
+    char* ptr = msg.data();
+    *(uint16_t*)ptr = sHead, ptr += 2;
+    memcpy(ptr, file_id.data(), file_id.size()), ptr += 32;
+    *(uint64_t*)ptr = file_size, ptr += 8;
+    *(bool*)ptr = flag, ptr += 1;
+    *(uint16_t*)ptr = chunk_index, ptr += 2;
+    *(uint16_t*)ptr = chunk_sum, ptr += 2;
+    *(uint64_t*)ptr = data_size, ptr += 8;
+    memcpy(ptr, data, data_size);
     return msg;
 }
 

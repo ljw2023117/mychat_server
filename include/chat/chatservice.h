@@ -35,6 +35,9 @@ enum EnMsgType
     LOGINOK_MSG,  // 登录成功后发送的消息 11
     NEW_USER_LOGIN_MSG,// 有新用户登录的消息 12
     USER_LOGINOUT_MSG,  // 通知其它用户有用户下线 13
+
+    FILE_MSG,   // 新文件消息 14
+    FILE_MSG_ACK, // 文件消息响应 15
 };
 
 class ChatService
@@ -58,6 +61,8 @@ public:
     void addGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
     // 群组聊天业务
     void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
+    // 新文件业务
+    void newfile(const TcpConnectionPtr &conn, json &js, Timestamp time);
     // 客户端异常退出
     void clientCloseException(const TcpConnectionPtr& conn);
     // 处理注销业务

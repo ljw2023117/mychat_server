@@ -11,6 +11,7 @@ class FileServer
 public:
     FileServer(EventLoop* loop, const InetAddress& listenAddr, const string& nameArg);
     void recvfile (CPacket&);
+    void sendfile (const TcpConnectionPtr&, CPacket&);
     void start();
 
 private:
